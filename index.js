@@ -8,6 +8,16 @@ const url = require('url')
 server.on('request', (request, response) => {
   const { pathname } = url.parse(request.url)
   const filename = pathname.substr(1) || 'index.html'
+
+  // 处理非 GET 请求
+  console.log(request.method)
+  if (request.method !== 'GET') {
+    response.statusCode = 405
+    response.setHeader('Content-Type', 'text/plain; charset=utf-8')
+    response.end('这是一个假的响应')
+    return
+  }
+
   // response.setHeader('Content-Type', 'text/html; charset=utf-8')
   fs.readFile(path.resolve(publicDir, filename), (error, data) => {
     if (error) {
@@ -24,6 +34,7 @@ server.on('request', (request, response) => {
         response.end('服务器发生未知错误，请稍后重试')
       }
     } else {
+      response.setHeader('Cache-Control', 'public, max-age=31536000')
       response.end(data.toString())
     }
   })
