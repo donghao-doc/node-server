@@ -3,33 +3,30 @@ const http = require('http')
 const server = http.createServer()
 const path = require('path')
 const publicDir = path.resolve(__dirname, 'public')
+const url = require('url')
 
 server.on('request', (request, response) => {
-  const { url } = request
-  console.log(url)
-  switch (url) {
-    case '/index.html':
-      response.setHeader('Content-Type', 'text/html; charset=utf-8')
-      fs.readFile(path.resolve(publicDir, 'index.html'), (error, data) => {
-        if (error) throw error
-        response.end(data.toString())
-      })
-      break
-    case '/style.css':
-      response.setHeader('Content-Type', 'text/css; charset=utf-8')
-      fs.readFile(path.resolve(publicDir, 'style.css'), (error, data) => {
-        if (error) throw error
-        response.end(data.toString())
-      })
-      break
-    case '/main.js':
-      response.setHeader('Content-Type', 'text/javascript; charset=utf-8')
-      fs.readFile(path.resolve(publicDir, 'main.js'), (error, data) => {
-        if (error) throw error
-        response.end(data.toString())
-      })
-      break
-  }
+  const { pathname } = url.parse(request.url)
+  const filename = pathname.substr(1) || 'index.html'
+  // response.setHeader('Content-Type', 'text/html; charset=utf-8')
+  fs.readFile(path.resolve(publicDir, filename), (error, data) => {
+    if (error) {
+      if (error.errno === -4058) {
+        response.statusCode = 404
+        fs.readFile(path.resolve(publicDir, '404.html'), (error, data) => {
+          response.end(data.toString())
+        })
+      } else if (error.errno === -4068) {
+        response.statusCode = 403
+        response.end('无权查看目录内容')
+      } else {
+        response.statusCode = 500
+        response.end('服务器发生未知错误，请稍后重试')
+      }
+    } else {
+      response.end(data.toString())
+    }
+  })
 })
 
 server.listen('8888', () => {
